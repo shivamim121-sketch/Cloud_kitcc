@@ -642,8 +642,8 @@ def render_overview(fdf: pd.DataFrame):
         **base_layout(title="Monthly Revenue, GM & EBITDA", barmode="group"),
         height=450
     )
-    fig.update_yaxes(title_text="Revenue / GM (₹ Lakhs)", secondary_y=False, **styled_axis())
-    fig.update_yaxes(title_text="EBITDA (₹ Lakhs)", secondary_y=True, **styled_axis())
+    fig.update_yaxes(secondary_y=False, **styled_axis(title="Revenue / GM (₹ Lakhs)"))
+    fig.update_yaxes(secondary_y=True, **styled_axis(title="EBITDA (₹ Lakhs)"))
     fig.update_xaxes(**styled_axis(showgrid=False))
     st.plotly_chart(fig, use_container_width=True)
 
@@ -782,8 +782,8 @@ def render_store_analysis(fdf: pd.DataFrame):
         title="Revenue vs EBITDA% (Bubble = |GM%|)"
     )
     fig.update_layout(**base_layout(height=500))
-    fig.update_xaxes(title="Avg Net Revenue (₹)", **styled_axis(fmt="₹,.0f"))
-    fig.update_yaxes(title="EBITDA %", **styled_axis())
+    fig.update_xaxes(**styled_axis(title="Avg Net Revenue (₹)", fmt="₹,.0f"))
+    fig.update_yaxes(**styled_axis(title="EBITDA %"))
     fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color="white")))
     st.plotly_chart(fig, use_container_width=True)
 
@@ -1062,8 +1062,8 @@ def render_variance_analysis(fdf: pd.DataFrame):
         title="Variance vs Revenue (Color = Bucket, Size = |EBITDA%|)"
     )
     fig.update_layout(**base_layout(height=500))
-    fig.update_xaxes(title="Net Revenue (₹)", **styled_axis(fmt="₹,.0f"))
-    fig.update_yaxes(title="Variance (₹)", **styled_axis(fmt="₹,.0f"))
+    fig.update_xaxes(**styled_axis(title="Net Revenue (₹)", fmt="₹,.0f"))
+    fig.update_yaxes(**styled_axis(title="Variance (₹)", fmt="₹,.0f"))
     fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color="white")))
     st.plotly_chart(fig, use_container_width=True)
 
