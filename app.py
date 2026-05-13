@@ -21,7 +21,7 @@ from pathlib import Path
 
 # Always resolve data file relative to this script — works on local & Streamlit Cloud
 BASE_DIR  = Path(__file__).parent
-DATA_PATH = BASE_DIR / "Kittchen_PNL_Data.xlsx"
+DATA_PATH = BASE_DIR / "Kittchen PNL Data.xlsx"
 
 # ─── PAGE CONFIG ────────────────────────────────────────────────────────────
 st.set_page_config(
