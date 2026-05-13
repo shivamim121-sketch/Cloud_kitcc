@@ -1,14 +1,16 @@
 # =========================================================
 # KITCHEN P&L INTELLIGENCE SUITE
-# Enterprise White Theme Edition
+# FULL ENTERPRISE EDITION
 # =========================================================
 
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 from pathlib import Path
 import numpy as np
+import hashlib
 
 # =========================================================
 # PAGE CONFIG
@@ -22,14 +24,14 @@ st.set_page_config(
 )
 
 # =========================================================
-# PATH
+# FILE PATH
 # =========================================================
 
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "Kittchen PNL Data.xlsx"
 
 # =========================================================
-# CSS
+# WHITE ENTERPRISE CSS
 # =========================================================
 
 st.markdown("""
@@ -37,8 +39,8 @@ st.markdown("""
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
+html, body, [class*="css"]{
+    font-family:'Inter',sans-serif;
 }
 
 .stApp{
@@ -48,7 +50,7 @@ html, body, [class*="css"] {
 /* SIDEBAR */
 
 [data-testid="stSidebar"]{
-    background:white;
+    background:#ffffff;
     border-right:1px solid #e5e7eb;
 }
 
@@ -62,25 +64,25 @@ html, body, [class*="css"] {
     display:grid;
     grid-template-columns:2fr 1fr;
     gap:24px;
-    margin-bottom:30px;
+    margin-bottom:28px;
 }
 
 .hero-main{
     background:white;
     border-radius:28px;
-    padding:40px;
+    padding:42px;
     border:1px solid #e5e7eb;
-    box-shadow:0 10px 30px rgba(0,0,0,0.04);
+    box-shadow:0 10px 35px rgba(0,0,0,0.05);
 }
 
 .hero-badge{
     display:inline-block;
+    background:#eef2ff;
+    color:#4338ca;
     padding:8px 18px;
     border-radius:999px;
-    background:#eef2ff;
-    color:#4f46e5;
     font-size:12px;
-    font-weight:700;
+    font-weight:800;
     letter-spacing:1px;
     margin-bottom:22px;
 }
@@ -99,10 +101,9 @@ html, body, [class*="css"] {
 }
 
 .hero-sub{
+    font-size:16px;
     color:#6b7280;
-    font-size:17px;
-    line-height:1.8;
-    max-width:900px;
+    line-height:1.9;
 }
 
 .hero-chips{
@@ -114,28 +115,26 @@ html, body, [class*="css"] {
 
 .hero-chip{
     background:#f3f4f6;
-    padding:10px 18px;
     border-radius:14px;
+    padding:10px 16px;
     font-size:14px;
     font-weight:600;
     color:#374151;
 }
 
-/* HERO CARD */
-
 .hero-card{
     background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
     border-radius:28px;
-    padding:35px;
+    padding:36px;
     color:white;
-    box-shadow:0 15px 40px rgba(79,70,229,0.25);
+    box-shadow:0 18px 45px rgba(79,70,229,0.28);
 }
 
 .hero-card-title{
-    font-size:13px;
-    font-weight:700;
-    opacity:0.8;
+    font-size:12px;
     letter-spacing:2px;
+    font-weight:700;
+    opacity:0.85;
 }
 
 .hero-card-metric{
@@ -145,9 +144,9 @@ html, body, [class*="css"] {
 }
 
 .hero-card-desc{
-    margin-top:20px;
-    line-height:1.8;
-    color:rgba(255,255,255,0.9);
+    margin-top:22px;
+    line-height:1.9;
+    color:rgba(255,255,255,0.92);
 }
 
 /* KPI */
@@ -157,19 +156,19 @@ html, body, [class*="css"] {
     border-radius:24px;
     padding:28px;
     border:1px solid #e5e7eb;
-    box-shadow:0 6px 18px rgba(0,0,0,0.04);
+    box-shadow:0 8px 24px rgba(0,0,0,0.04);
 }
 
 .metric-title{
-    font-size:13px;
-    font-weight:700;
+    font-size:12px;
     color:#6b7280;
+    font-weight:800;
     letter-spacing:1px;
     text-transform:uppercase;
 }
 
 .metric-value{
-    font-size:40px;
+    font-size:38px;
     font-weight:900;
     color:#111827;
     margin-top:10px;
@@ -185,14 +184,18 @@ html, body, [class*="css"] {
     color:#059669;
 }
 
+.delta-neg{
+    color:#dc2626;
+}
+
 /* SECTION */
 
 .section-header{
-    font-size:28px;
-    font-weight:800;
+    font-size:30px;
+    font-weight:900;
     color:#111827;
     margin-top:40px;
-    margin-bottom:20px;
+    margin-bottom:18px;
 }
 
 /* INSIGHTS */
@@ -202,14 +205,14 @@ html, body, [class*="css"] {
     border-radius:24px;
     padding:30px;
     border:1px solid #e5e7eb;
-    box-shadow:0 6px 18px rgba(0,0,0,0.04);
+    box-shadow:0 8px 20px rgba(0,0,0,0.04);
     height:100%;
 }
 
 .insight-title{
     font-size:12px;
-    font-weight:800;
     color:#6b7280;
+    font-weight:800;
     letter-spacing:1px;
 }
 
@@ -240,20 +243,49 @@ html, body, [class*="css"] {
     overflow:hidden;
 }
 
+/* FILTER PILLS */
+
+.filter-pill{
+    display:inline-block;
+    background:#eef2ff;
+    color:#4338ca;
+    padding:8px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+    margin-right:8px;
+    margin-bottom:8px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# DATA
+# DATA LOADING
 # =========================================================
 
-@st.cache_data
-def load_data(path):
-    df = pd.read_excel(path, header=1)
+@st.cache_data(ttl=300)
+def load_data(filepath):
 
-    df["GM%"] = (df["GROSS MARGIN"] / df["NET REVENUE"]) * 100
-    df["EBITDA%"] = (df["KITCHEN EBITDA"] / df["NET REVENUE"]) * 100
-    df["VARIANCE%"] = (df["VARIANCE"] / df["NET REVENUE"]) * 100
+    df = pd.read_excel(filepath, header=1)
+
+    df["GM%"] = (
+        df["GROSS MARGIN"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
+
+    df["EBITDA%"] = (
+        df["KITCHEN EBITDA"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
+
+    df["VARIANCE%"] = (
+        df["VARIANCE"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
+
+    df["CM"] = df["GROSS MARGIN"]
+    df["CM%"] = df["GM%"]
 
     month_order = [
         "Oct-2023",
@@ -283,8 +315,8 @@ df = load_data(DATA_PATH)
 def render_sidebar(df):
 
     st.sidebar.markdown("""
-    <div style='padding:10px 0 20px 0'>
-        <div style='font-size:28px;font-weight:900;color:#111827'>
+    <div style='padding-top:10px;padding-bottom:20px'>
+        <div style='font-size:30px;font-weight:900;color:#111827'>
             🍳 Kitchen Intelligence
         </div>
 
@@ -294,9 +326,14 @@ def render_sidebar(df):
     </div>
     """, unsafe_allow_html=True)
 
+    st.sidebar.markdown("---")
+
     dashboard = st.sidebar.radio(
-        "Dashboard",
-        ["Kitchen Level PNL", "Variance Level PNL"]
+        "Select Dashboard",
+        [
+            "🏪 Kitchen Level PNL",
+            "📉 Variance Level PNL"
+        ]
     )
 
     st.sidebar.markdown("---")
@@ -304,32 +341,50 @@ def render_sidebar(df):
     filters = {}
 
     filters["month"] = st.sidebar.multiselect(
-        "Month",
+        "📅 Month",
         options=df["MONTH_STR"].unique(),
         default=df["MONTH_STR"].unique()
     )
 
     filters["city"] = st.sidebar.multiselect(
-        "City",
+        "🏙️ City",
         options=sorted(df["CITY"].unique()),
         default=sorted(df["CITY"].unique())
     )
 
     filters["status"] = st.sidebar.multiselect(
-        "Status",
+        "🔵 Status",
         options=df["STATUS"].unique(),
         default=df["STATUS"].unique()
     )
 
     filters["store"] = st.sidebar.multiselect(
-        "Store",
+        "🏪 Store",
         options=sorted(df["STORE"].unique())
+    )
+
+    filters["zone"] = st.sidebar.multiselect(
+        "🗺️ Zone",
+        options=sorted(df["ZONE MAPPING"].unique()),
+        default=sorted(df["ZONE MAPPING"].unique())
+    )
+
+    st.sidebar.markdown("---")
+
+    rev_min = float(df["NET REVENUE"].min())
+    rev_max = float(df["NET REVENUE"].max())
+
+    filters["rev_range"] = st.sidebar.slider(
+        "💰 Revenue Range",
+        min_value=rev_min,
+        max_value=rev_max,
+        value=(rev_min, rev_max)
     )
 
     st.sidebar.markdown("---")
 
     st.sidebar.markdown("""
-    <div style='font-size:12px;color:#6b7280;text-align:center'>
+    <div style='text-align:center;font-size:12px;color:#6b7280'>
         Financial analytics environment for
         multi-city kitchen performance review.
     </div>
@@ -340,7 +395,7 @@ def render_sidebar(df):
 dashboard, filters = render_sidebar(df)
 
 # =========================================================
-# FILTERS
+# FILTER LOGIC
 # =========================================================
 
 fdf = df.copy()
@@ -357,6 +412,16 @@ if filters["status"]:
 if filters["store"]:
     fdf = fdf[fdf["STORE"].isin(filters["store"])]
 
+if filters["zone"]:
+    fdf = fdf[fdf["ZONE MAPPING"].isin(filters["zone"])]
+
+fdf = fdf[
+    fdf["NET REVENUE"].between(
+        filters["rev_range"][0],
+        filters["rev_range"][1]
+    )
+]
+
 # =========================================================
 # METRICS
 # =========================================================
@@ -365,7 +430,6 @@ total_rev = fdf["NET REVENUE"].sum()
 avg_gm = fdf["GM%"].mean()
 avg_ebitda = fdf["EBITDA%"].mean()
 stores = fdf["STORE"].nunique()
-
 best_city = fdf.groupby("CITY")["EBITDA%"].mean().idxmax()
 
 # =========================================================
@@ -404,25 +468,11 @@ st.markdown(f"""
 
         <div class='hero-chips'>
 
-            <div class='hero-chip'>
-                📊 Revenue Monitoring
-            </div>
-
-            <div class='hero-chip'>
-                📈 EBITDA Tracking
-            </div>
-
-            <div class='hero-chip'>
-                🏪 Multi-City Analysis
-            </div>
-
-            <div class='hero-chip'>
-                📉 Variance Reporting
-            </div>
-
-            <div class='hero-chip'>
-                ⚡ Operational Intelligence
-            </div>
+            <div class='hero-chip'>📊 Revenue Monitoring</div>
+            <div class='hero-chip'>📈 EBITDA Tracking</div>
+            <div class='hero-chip'>🏪 Multi-City Analysis</div>
+            <div class='hero-chip'>📉 Variance Reporting</div>
+            <div class='hero-chip'>⚡ Operational Intelligence</div>
 
         </div>
 
@@ -458,87 +508,70 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
+# FILTER PILLS
+# =========================================================
+
+st.markdown(
+    f"""
+    <div class='filter-pill'>
+        Cities: {len(filters["city"])}
+    </div>
+
+    <div class='filter-pill'>
+        Months: {len(filters["month"])}
+    </div>
+
+    <div class='filter-pill'>
+        Stores: {fdf["STORE"].nunique()}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# =========================================================
 # KPI STRIP
 # =========================================================
 
 col1, col2, col3, col4 = st.columns(4)
 
-with col1:
-    st.markdown(f"""
-    <div class='metric-card'>
-        <div class='metric-title'>
-            💰 Net Revenue
-        </div>
+cards = [
+    ("💰 Net Revenue", f"₹{total_rev/1e7:.1f}Cr", "Across selected kitchens"),
+    ("📊 Avg GM%", f"{avg_gm:.1f}%", "Gross margin performance"),
+    ("📈 Avg EBITDA%", f"{avg_ebitda:.1f}%", "Operational profitability"),
+    ("🏪 Kitchens", f"{stores}", "Active locations")
+]
 
-        <div class='metric-value'>
-            ₹{total_rev/1e7:.1f}Cr
-        </div>
+for col, card in zip([col1,col2,col3,col4], cards):
 
-        <div class='metric-delta delta-pos'>
-            Across selected kitchens
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    with col:
 
-with col2:
-    st.markdown(f"""
-    <div class='metric-card'>
-        <div class='metric-title'>
-            📊 Avg GM%
-        </div>
+        st.markdown(f"""
+        <div class='metric-card'>
 
-        <div class='metric-value'>
-            {avg_gm:.1f}%
-        </div>
+            <div class='metric-title'>
+                {card[0]}
+            </div>
 
-        <div class='metric-delta delta-pos'>
-            Gross margin performance
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+            <div class='metric-value'>
+                {card[1]}
+            </div>
 
-with col3:
-    st.markdown(f"""
-    <div class='metric-card'>
-        <div class='metric-title'>
-            📈 Avg EBITDA%
-        </div>
+            <div class='metric-delta delta-pos'>
+                {card[2]}
+            </div>
 
-        <div class='metric-value'>
-            {avg_ebitda:.1f}%
         </div>
-
-        <div class='metric-delta delta-pos'>
-            Operational profitability
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col4:
-    st.markdown(f"""
-    <div class='metric-card'>
-        <div class='metric-title'>
-            🏪 Kitchens
-        </div>
-
-        <div class='metric-value'>
-            {stores}
-        </div>
-
-        <div class='metric-delta delta-pos'>
-            Active locations
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 # =========================================================
 # TABS
 # =========================================================
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "📋 Performance Table",
     "📈 Trends",
-    "🏙️ Market Analysis"
+    "🏙️ Market Analysis",
+    "🔮 Store Intelligence"
 ])
 
 # =========================================================
@@ -552,18 +585,16 @@ with tab1:
         unsafe_allow_html=True
     )
 
-    show_cols = [
-        "STORE",
-        "CITY",
-        "MONTH_STR",
-        "NET REVENUE",
-        "GM%",
-        "EBITDA%",
-        "VARIANCE%"
-    ]
-
     st.dataframe(
-        fdf[show_cols],
+        fdf[[
+            "STORE",
+            "CITY",
+            "MONTH_STR",
+            "NET REVENUE",
+            "GM%",
+            "EBITDA%",
+            "VARIANCE%"
+        ]],
         use_container_width=True,
         height=600
     )
@@ -581,32 +612,44 @@ with tab2:
 
     monthly = fdf.groupby("MONTH_STR").agg({
         "NET REVENUE":"sum",
-        "EBITDA%":"mean"
+        "EBITDA%":"mean",
+        "GM%":"mean"
     }).reset_index()
 
-    fig = go.Figure()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    fig.add_trace(go.Bar(
-        x=monthly["MONTH_STR"],
-        y=monthly["NET REVENUE"]/1e7,
-        name="Revenue"
-    ))
+    fig.add_trace(
+        go.Bar(
+            x=monthly["MONTH_STR"],
+            y=monthly["NET REVENUE"]/1e7,
+            name="Revenue (Cr)"
+        ),
+        secondary_y=False
+    )
 
-    fig.add_trace(go.Scatter(
-        x=monthly["MONTH_STR"],
-        y=monthly["EBITDA%"],
-        mode="lines+markers",
-        name="EBITDA %",
-        yaxis="y2"
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=monthly["MONTH_STR"],
+            y=monthly["EBITDA%"],
+            mode="lines+markers",
+            name="EBITDA %"
+        ),
+        secondary_y=True
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=monthly["MONTH_STR"],
+            y=monthly["GM%"],
+            mode="lines+markers",
+            name="GM %"
+        ),
+        secondary_y=True
+    )
 
     fig.update_layout(
-        height=500,
         template="plotly_white",
-        yaxis2=dict(
-            overlaying="y",
-            side="right"
-        )
+        height=520
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -618,7 +661,7 @@ with tab2:
 with tab3:
 
     st.markdown(
-        "<div class='section-header'>City Performance Analysis</div>",
+        "<div class='section-header'>Market Performance Analysis</div>",
         unsafe_allow_html=True
     )
 
@@ -631,18 +674,46 @@ with tab3:
         city_perf,
         x="CITY",
         y="NET REVENUE",
-        color="EBITDA%"
+        color="EBITDA%",
+        text_auto=True,
+        template="plotly_white"
     )
 
-    fig2.update_layout(
-        template="plotly_white",
-        height=500
-    )
+    fig2.update_layout(height=500)
 
     st.plotly_chart(fig2, use_container_width=True)
 
 # =========================================================
-# INSIGHTS
+# TAB 4
+# =========================================================
+
+with tab4:
+
+    st.markdown(
+        "<div class='section-header'>Store Intelligence Map</div>",
+        unsafe_allow_html=True
+    )
+
+    store_perf = fdf.groupby(["STORE","CITY"]).agg({
+        "NET REVENUE":"mean",
+        "EBITDA%":"mean"
+    }).reset_index()
+
+    fig3 = px.scatter(
+        store_perf,
+        x="NET REVENUE",
+        y="EBITDA%",
+        color="CITY",
+        size="NET REVENUE",
+        hover_name="STORE",
+        template="plotly_white",
+        height=600
+    )
+
+    st.plotly_chart(fig3, use_container_width=True)
+
+# =========================================================
+# EXECUTIVE INSIGHTS
 # =========================================================
 
 st.markdown(
