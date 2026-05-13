@@ -255,9 +255,10 @@ def load_data(filepath) -> pd.DataFrame:
     """Load and preprocess the kitchen PNL data."""
     df = pd.read_excel(filepath, header=1)
 
-    df["GM%"]      = (df["GROSS MARGIN"]   / df["NET REVENUE"] * 100).round(2)
-    df["EBITDA%"]  = (df["KITCHEN EBITDA"] / df["NET REVENUE"] * 100).round(2)
-    df["VARIANCE%"]= (df["VARIANCE"]       / df["NET REVENUE"] * 100).round(4)
+    # Safe percentage calculations with zero-division protection
+    df["GM%"]      = (df["GROSS MARGIN"]   / df["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
+    df["EBITDA%"]  = (df["KITCHEN EBITDA"] / df["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
+    df["VARIANCE%"]= (df["VARIANCE"]       / df["NET REVENUE"].replace(0, np.nan) * 100).round(4).fillna(0)
 
     df["CM"]  = df["GROSS MARGIN"]
     df["CM%"] = df["GM%"]
@@ -545,8 +546,8 @@ def render_kitchen_pnl(df: pd.DataFrame, filters: dict):
     total_rev = fdf["NET REVENUE"].sum()
     total_gm = fdf["GROSS MARGIN"].sum()
     total_ebitda = fdf["KITCHEN EBITDA"].sum()
-    avg_gm_pct = (total_gm / total_rev * 100) if total_rev > 0 else 0
-    avg_ebitda_pct = (total_ebitda / total_rev * 100) if total_rev > 0 else 0
+    avg_gm_pct = (total_gm / total_rev * 100) if total_rev and total_rev > 0 else 0
+    avg_ebitda_pct = (total_ebitda / total_rev * 100) if total_rev and total_rev > 0 else 0
     store_count = fdf["STORE"].nunique()
     active_count = fdf[fdf["STATUS"] == "Active"]["STORE"].nunique() if "Active" in fdf["STATUS"].values else 0
 
@@ -696,8 +697,8 @@ def render_trends(fdf: pd.DataFrame):
         "KITCHEN EBITDA": "sum",
         "STORE": "nunique"
     }).reset_index()
-    monthly["GM%"] = (monthly["GROSS MARGIN"] / monthly["NET REVENUE"] * 100).round(2)
-    monthly["EBITDA%"] = (monthly["KITCHEN EBITDA"] / monthly["NET REVENUE"] * 100).round(2)
+    monthly["GM%"] = (monthly["GROSS MARGIN"] / monthly["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
+    monthly["EBITDA%"] = (monthly["KITCHEN EBITDA"] / monthly["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
 
     fig = make_subplots(rows=2, cols=1, subplot_titles=("Revenue Trend", "Margin % Trend"),
                         vertical_spacing=0.15)
@@ -733,7 +734,7 @@ def render_trends(fdf: pd.DataFrame):
         "KITCHEN EBITDA": "sum",
         "STORE": "nunique"
     }).reset_index()
-    city_perf["EBITDA%"] = (city_perf["KITCHEN EBITDA"] / city_perf["NET REVENUE"] * 100).round(2)
+    city_perf["EBITDA%"] = (city_perf["KITCHEN EBITDA"] / city_perf["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
     city_perf = city_perf.sort_values("NET REVENUE", ascending=True)
 
     fig_city = go.Figure()
@@ -767,7 +768,7 @@ def render_store_analysis(fdf: pd.DataFrame):
         "CITY": "first",
         "STATUS": "first"
     }).reset_index()
-    store_perf["EBITDA%"] = (store_perf["KITCHEN EBITDA"] / store_perf["NET REVENUE"] * 100).round(2)
+    store_perf["EBITDA%"] = (store_perf["KITCHEN EBITDA"] / store_perf["NET REVENUE"].replace(0, np.nan) * 100).round(2).fillna(0)
 
     # Create safe size column for marker sizing
     store_perf_plot = store_perf.copy()
