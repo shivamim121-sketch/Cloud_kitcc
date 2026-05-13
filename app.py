@@ -1,414 +1,352 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
-from plotly.subplots import make_subplots
-import numpy as np
+import plotly.graph_objects as go
 from pathlib import Path
 
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
 # PAGE CONFIG
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
 st.set_page_config(
     page_title="Kitchen P&L Intelligence",
     page_icon="🍳",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    layout="wide"
 )
 
-# ═══════════════════════════════════════════════════════════════
-# PREMIUM UI CSS
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
+# CSS
+# =========================================================
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
 
 .stApp {
-    background:
-        radial-gradient(circle at top left, rgba(139,92,246,0.18), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(34,211,238,0.15), transparent 30%),
-        linear-gradient(135deg, #050816 0%, #0b1120 45%, #111827 100%);
+    background: linear-gradient(135deg,#0f172a,#111827);
     color: white;
 }
 
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #070b1d 0%, #111827 100%);
-    border-right: 1px solid rgba(139,92,246,0.25);
+.metric-card{
+    background: rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);
+    padding:20px;
+    border-radius:18px;
+    text-align:center;
+    backdrop-filter: blur(10px);
 }
 
-.metric-card {
-    background: rgba(17,24,39,0.75);
-    border: 1px solid rgba(139,92,246,0.25);
-    border-radius: 22px;
-    padding: 22px;
-    backdrop-filter: blur(16px);
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+.metric-title{
+    color:#94a3b8;
+    font-size:14px;
 }
 
-.metric-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(139,92,246,0.6);
-    box-shadow: 0 10px 30px rgba(139,92,246,0.25);
+.metric-value{
+    font-size:32px;
+    font-weight:700;
+    color:white;
 }
 
-.metric-title {
-    color: #94a3b8;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-}
-
-.metric-value {
-    color: white;
-    font-size: 2rem;
-    font-weight: 800;
-    margin-top: 8px;
-}
-
-.metric-delta {
-    margin-top: 8px;
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.delta-pos {
-    color: #4ade80;
-}
-
-.delta-neg {
-    color: #fb7185;
-}
-
-.section-header {
-    background: linear-gradient(90deg,
-        rgba(139,92,246,0.28),
-        rgba(34,211,238,0.08),
-        transparent);
-    border-left: 5px solid #8b5cf6;
-    padding: 14px 18px;
-    border-radius: 14px;
-    margin: 24px 0 16px 0;
-    color: white;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-}
-
-.stDataFrame {
-    border: 1px solid rgba(139,92,246,0.2);
-    border-radius: 18px;
-    overflow: hidden;
-}
-
-.filter-pill {
-    display: inline-block;
-    background: rgba(139,92,246,0.18);
-    border: 1px solid rgba(139,92,246,0.35);
-    color: #ddd6fe;
-    padding: 6px 14px;
-    border-radius: 30px;
-    font-size: 0.72rem;
-    margin-right: 8px;
+.section-header{
+    font-size:24px;
+    font-weight:700;
+    margin-top:25px;
+    margin-bottom:15px;
+    color:#c4b5fd;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════
-# COLORS
-# ═══════════════════════════════════════════════════════════════
-PURPLE = "#8b5cf6"
-CYAN = "#22d3ee"
-EMERALD = "#34d399"
-AMBER = "#fbbf24"
-ROSE = "#fb7185"
-FONT_COLOR = "#f8fafc"
-GRID_COLOR = "rgba(139,92,246,0.15)"
-COLORS = [PURPLE, CYAN, EMERALD, AMBER, ROSE]
-
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
 # FILE PATH
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "Kittchen PNL Data.xlsx"
 
-if not DATA_PATH.exists():
-    st.error(f"Excel file not found: {DATA_PATH}")
-    st.stop()
+# =========================================================
+# LOAD DATA
+# =========================================================
+@st.cache_data
+def load_data():
 
-# ═══════════════════════════════════════════════════════════════
-# DATA LOADING
-# ═══════════════════════════════════════════════════════════════
-@st.cache_data(ttl=600)
-def load_data(filepath):
-    df = pd.read_excel(filepath, header=1)
+    df = pd.read_excel(DATA_PATH, header=1)
 
-    df["GM%"] = (df["GROSS MARGIN"] / df["NET REVENUE"] * 100).round(2)
-    df["EBITDA%"] = (df["KITCHEN EBITDA"] / df["NET REVENUE"] * 100).round(2)
-    df["VARIANCE%"] = (df["VARIANCE"] / df["NET REVENUE"] * 100).round(2)
+    # Derived columns
+    df["GM%"] = (
+        df["GROSS MARGIN"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
 
-    month_order = [
-        "Oct-2023",
-        "Nov-2023",
-        "Dec-2023",
-        "Jan-2024",
-        "Feb-2024",
-        "Mar-2024"
-    ]
+    df["EBITDA%"] = (
+        df["KITCHEN EBITDA"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
 
-    df["MONTH"] = pd.Categorical(
-        df["MONTH"],
-        categories=month_order,
-        ordered=True
-    )
+    df["VARIANCE%"] = (
+        df["VARIANCE"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
 
     return df
 
-# ═══════════════════════════════════════════════════════════════
-# SAFE DATAFRAME STYLING
-# ═══════════════════════════════════════════════════════════════
-def safe_style_dataframe(df, cols=None):
+df = load_data()
 
-    def color_vals(v):
-        if pd.isna(v):
-            return ""
-
-        try:
-            v = float(v)
-        except:
-            return ""
-
-        if v < 0:
-            return "color:#fb7185;font-weight:700"
-        elif v > 0:
-            return "color:#4ade80;font-weight:700"
-
-        return ""
-
-    styler = df.style
-
-    if cols:
-        try:
-            styler = styler.map(color_vals, subset=cols)
-        except:
-            try:
-                styler = styler.applymap(color_vals, subset=cols)
-            except:
-                pass
-
-    return styler
-
-# ═══════════════════════════════════════════════════════════════
-# CHART LAYOUT
-# ═══════════════════════════════════════════════════════════════
-def base_layout(**kwargs):
-    return dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(255,255,255,0.02)",
-        font=dict(
-            family="Inter",
-            color=FONT_COLOR,
-            size=12
-        ),
-        margin=dict(l=40, r=30, t=60, b=40),
-        legend=dict(
-            bgcolor="rgba(17,24,39,0.85)",
-            bordercolor="rgba(139,92,246,0.25)",
-            borderwidth=1,
-        ),
-        **kwargs
-    )
-
-# ═══════════════════════════════════════════════════════════════
+# =========================================================
 # SIDEBAR
-# ═══════════════════════════════════════════════════════════════
-def render_sidebar(df):
+# =========================================================
+st.sidebar.title("🍳 Kitchen Filters")
 
-    st.sidebar.markdown("## 🍳 Kitchen Intelligence")
+cities = st.sidebar.multiselect(
+    "Select City",
+    df["CITY"].unique(),
+    default=df["CITY"].unique()
+)
 
-    months = st.sidebar.multiselect(
-        "Month",
-        df["MONTH"].dropna().unique(),
-        default=df["MONTH"].dropna().unique()
-    )
+months = st.sidebar.multiselect(
+    "Select Month",
+    df["MONTH"].unique(),
+    default=df["MONTH"].unique()
+)
 
-    cities = st.sidebar.multiselect(
-        "City",
-        sorted(df["CITY"].dropna().unique()),
-        default=sorted(df["CITY"].dropna().unique())
-    )
+filtered_df = df[
+    (df["CITY"].isin(cities)) &
+    (df["MONTH"].isin(months))
+]
 
-    filtered = df[
-        (df["MONTH"].isin(months)) &
-        (df["CITY"].isin(cities))
-    ]
+# =========================================================
+# HEADER
+# =========================================================
+st.markdown("""
+<div style='text-align:center;padding:10px;'>
+    <h1 style='color:white;'>🍳 Kitchen P&L Intelligence Dashboard</h1>
+    <p style='color:#94a3b8;'>
+        Cloud Kitchen Analytics Suite
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-    return filtered
+# =========================================================
+# KPI SECTION
+# =========================================================
+total_revenue = filtered_df["NET REVENUE"].sum()
+total_ebitda = filtered_df["KITCHEN EBITDA"].sum()
+avg_gm = filtered_df["GM%"].mean()
+avg_ebitda = filtered_df["EBITDA%"].mean()
 
-# ═══════════════════════════════════════════════════════════════
-# KPI CARDS
-# ═══════════════════════════════════════════════════════════════
-def metric_card(title, value, delta, positive=True):
+col1, col2, col3, col4 = st.columns(4)
 
-    dclass = "delta-pos" if positive else "delta-neg"
-
-    return f"""
+with col1:
+    st.markdown(f"""
     <div class='metric-card'>
-        <div class='metric-title'>{title}</div>
-        <div class='metric-value'>{value}</div>
-        <div class='metric-delta {dclass}'>{delta}</div>
+        <div class='metric-title'>TOTAL REVENUE</div>
+        <div class='metric-value'>
+            ₹ {total_revenue/10000000:.2f} Cr
+        </div>
     </div>
-    """
+    """, unsafe_allow_html=True)
 
-def render_kpis(df):
+with col2:
+    st.markdown(f"""
+    <div class='metric-card'>
+        <div class='metric-title'>TOTAL EBITDA</div>
+        <div class='metric-value'>
+            ₹ {total_ebitda/10000000:.2f} Cr
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    total_rev = df["NET REVENUE"].sum()
-    total_ebitda = df["KITCHEN EBITDA"].sum()
-    avg_gm = df["GM%"].mean()
-    avg_ebitda = df["EBITDA%"].mean()
-    stores = df["STORE"].nunique()
+with col3:
+    st.markdown(f"""
+    <div class='metric-card'>
+        <div class='metric-title'>AVG GM%</div>
+        <div class='metric-value'>
+            {avg_gm:.2f}%
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    cols = st.columns(5)
+with col4:
+    st.markdown(f"""
+    <div class='metric-card'>
+        <div class='metric-title'>AVG EBITDA%</div>
+        <div class='metric-value'>
+            {avg_ebitda:.2f}%
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    cards = [
-        ("Revenue", f"₹{total_rev/1e7:.2f}Cr", "Total Revenue", True),
-        ("EBITDA", f"₹{total_ebitda/1e7:.2f}Cr", "Total EBITDA", total_ebitda > 0),
-        ("GM%", f"{avg_gm:.1f}%", "Gross Margin", avg_gm > 0),
-        ("EBITDA%", f"{avg_ebitda:.1f}%", "Avg EBITDA", avg_ebitda > 0),
-        ("Stores", str(stores), "Active Stores", True),
-    ]
+# =========================================================
+# REVENUE TREND
+# =========================================================
+st.markdown(
+    "<div class='section-header'>📈 Revenue Trend</div>",
+    unsafe_allow_html=True
+)
 
-    for col, card in zip(cols, cards):
-        with col:
-            st.markdown(metric_card(*card), unsafe_allow_html=True)
+monthly = filtered_df.groupby("MONTH").agg({
+    "NET REVENUE":"sum",
+    "KITCHEN EBITDA":"sum"
+}).reset_index()
 
-# ═══════════════════════════════════════════════════════════════
-# SNAPSHOT TABLE
-# ═══════════════════════════════════════════════════════════════
-def render_snapshot(df):
+fig = go.Figure()
 
-    st.markdown("<div class='section-header'>📋 Kitchen Snapshot</div>", unsafe_allow_html=True)
+fig.add_trace(
+    go.Bar(
+        x=monthly["MONTH"],
+        y=monthly["NET REVENUE"],
+        name="Revenue",
+    )
+)
 
-    table = df.groupby("STORE").agg({
-        "NET REVENUE": "sum",
-        "GM%": "mean",
-        "EBITDA%": "mean",
-        "KITCHEN EBITDA": "sum"
-    }).reset_index()
+fig.add_trace(
+    go.Scatter(
+        x=monthly["MONTH"],
+        y=monthly["KITCHEN EBITDA"],
+        mode="lines+markers",
+        name="EBITDA"
+    )
+)
 
-    table.columns = [
-        "Store",
-        "Revenue",
-        "GM%",
-        "EBITDA%",
-        "EBITDA"
-    ]
+# =========================================================
+# FIXED UPDATE_LAYOUT
+# =========================================================
+fig.update_layout(
+    title="Revenue & EBITDA Trend",
+    xaxis_title="Month",
+    yaxis_title="Amount",
+    template="plotly_dark",
+    height=500,
+    margin=dict(
+        l=40,
+        r=40,
+        t=60,
+        b=40
+    ),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
 
-    table["Revenue"] = (table["Revenue"] / 1e5).round(1)
-    table["EBITDA"] = (table["EBITDA"] / 1e5).round(1)
+st.plotly_chart(fig, use_container_width=True)
 
-    styled = safe_style_dataframe(table, cols=["EBITDA", "EBITDA%"])
+# =========================================================
+# CITY PERFORMANCE
+# =========================================================
+st.markdown(
+    "<div class='section-header'>🏙️ City Performance</div>",
+    unsafe_allow_html=True
+)
 
-    st.dataframe(styled, use_container_width=True, height=500)
+city_data = filtered_df.groupby("CITY").agg({
+    "NET REVENUE":"sum",
+    "KITCHEN EBITDA":"sum"
+}).reset_index()
 
-# ═══════════════════════════════════════════════════════════════
-# TREND CHARTS
-# ═══════════════════════════════════════════════════════════════
-def render_trends(df):
+fig2 = px.bar(
+    city_data,
+    x="CITY",
+    y="NET REVENUE",
+    color="CITY",
+    title="Revenue by City",
+    template="plotly_dark"
+)
 
-    st.markdown("<div class='section-header'>📈 Revenue Trends</div>", unsafe_allow_html=True)
+fig2.update_layout(height=500)
 
-    monthly = df.groupby("MONTH").agg({
-        "NET REVENUE": "sum",
-        "KITCHEN EBITDA": "sum",
-        "GM%": "mean",
-        "EBITDA%": "mean"
-    }).reset_index()
+st.plotly_chart(fig2, use_container_width=True)
 
-    col1, col2 = st.columns(2)
+# =========================================================
+# STORE SCATTER
+# =========================================================
+st.markdown(
+    "<div class='section-header'>🔮 Store Intelligence</div>",
+    unsafe_allow_html=True
+)
 
-    with col1:
+stores = filtered_df.groupby(
+    ["STORE","CITY"]
+).agg({
+    "NET REVENUE":"mean",
+    "EBITDA%":"mean"
+}).reset_index()
 
-        fig = go.Figure()
+fig3 = px.scatter(
+    stores,
+    x="NET REVENUE",
+    y="EBITDA%",
+    size="NET REVENUE",
+    color="CITY",
+    hover_name="STORE",
+    size_max=40,
+    template="plotly_dark"
+)
 
-        fig.add_trace(go.Bar(
-            x=monthly["MONTH"],
-            y=monthly["NET REVENUE"] / 1e5,
-            marker_color=PURPLE,
-            name="Revenue"
-        ))
+# =========================================================
+# FIXED SECTION
+# =========================================================
+fig3.update_layout(
+    title="Revenue vs EBITDA%",
+    height=600
+)
 
-        fig.add_trace(go.Scatter(
-            x=monthly["MONTH"],
-            y=monthly["KITCHEN EBITDA"] / 1e5,
-            mode="lines+markers",
-            line=dict(color=EMERALD, width=4),
-            name="EBITDA"
-        ))
+st.plotly_chart(fig3, use_container_width=True)
 
-        fig.update_layout(
-            title="Revenue vs EBITDA",
-            **base_layout()
-        )
+# =========================================================
+# DATA TABLE
+# =========================================================
+st.markdown(
+    "<div class='section-header'>📋 Detailed Data</div>",
+    unsafe_allow_html=True
+)
 
-        st.plotly_chart(fig, use_container_width=True)
+st.dataframe(
+    filtered_df,
+    use_container_width=True,
+    height=500
+)
 
-    with col2:
+# =========================================================
+# DOWNLOAD BUTTON
+# =========================================================
+csv = filtered_df.to_csv(index=False).encode("utf-8")
 
-        fig2 = go.Figure()
+st.download_button(
+    "⬇ Download CSV",
+    csv,
+    "kitchen_pnl.csv",
+    "text/csv"
+)
 
-        fig2.add_trace(go.Scatter(
-            x=monthly["MONTH"],
-            y=monthly["GM%"],
-            mode="lines+markers",
-            line=dict(color=CYAN, width=4),
-            name="GM%"
-        ))
+# =========================================================
+# INSIGHTS
+# =========================================================
+st.markdown(
+    "<div class='section-header'>💡 Insights</div>",
+    unsafe_allow_html=True
+)
 
-        fig2.add_trace(go.Scatter(
-            x=monthly["MONTH"],
-            y=monthly["EBITDA%"],
-            mode="lines+markers",
-            line=dict(color=AMBER, width=4),
-            name="EBITDA%"
-        ))
+best_city = (
+    filtered_df.groupby("CITY")["EBITDA%"]
+    .mean()
+    .idxmax()
+)
 
-        fig2.update_layout(
-            title="Margin Trends",
-            **base_layout()
-        )
+worst_city = (
+    filtered_df.groupby("CITY")["EBITDA%"]
+    .mean()
+    .idxmin()
+)
 
-        st.plotly_chart(fig2, use_container_width=True)
+st.success(
+    f"🏆 Best Performing City: {best_city}"
+)
 
-# ═══════════════════════════════════════════════════════════════
-# CITY ANALYSIS
-# ═══════════════════════════════════════════════════════════════
-def render_city_analysis(df):
+st.warning(
+    f"⚠️ Lowest Performing City: {worst_city}"
+)
 
-    st.markdown("<div class='section-header'>🏙️ City Performance</div>", unsafe_allow_html=True)
-
-    city = df.groupby("CITY").agg({
-        "NET REVENUE": "sum",
-        "KITCHEN EBITDA": "sum"
-    }).reset_index()
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        fig = px.bar(
-            city,
-            x="CITY",
-            y="NET REVENUE",
-            color="CITY",
-            color_discrete_sequence=COLORS
-        )
-
-        fig.update_layout(
-            title="Revenue by City",
-            **base_layout(),
+st.info(
+    f"📊 Total Stores Analysed: {filtered_df['STORE'].nunique()}"
+)
