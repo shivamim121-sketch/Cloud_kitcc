@@ -4,9 +4,8 @@
 ║         Cloud Kitchen Analytics Suite                       ║
 ╚══════════════════════════════════════════════════════════════╝
 
-Python: 3.10+
-Packages: streamlit>=1.32, plotly>=5.20, pandas>=2.0, openpyxl>=3.1
-Run: streamlit run app.py
+Run:
+streamlit run app.py
 """
 
 import streamlit as st
@@ -15,7 +14,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import numpy as np
-import hashlib
 from pathlib import Path
 
 # ─────────────────────────────────────────────────────────────
@@ -35,106 +33,142 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────
-# THEME / CSS
+# WHITE THEME CSS
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
 }
 
 .stApp {
-    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+    background: #f5f7fb;
 }
 
-/* Sidebar */
+/* SIDEBAR */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0d0d1a 0%, #1a0a2e 100%);
-    border-right: 1px solid rgba(139,92,246,0.3);
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
 }
 
-/* Metric Cards */
-.metric-card {
-    background: linear-gradient(
-        135deg,
-        rgba(139,92,246,0.15) 0%,
-        rgba(59,130,246,0.10) 100%
-    );
-    border: 1px solid rgba(139,92,246,0.4);
-    border-radius: 16px;
-    padding: 20px;
+[data-testid="stSidebar"] label {
+    color: #374151 !important;
+    font-weight: 600;
+}
+
+.brand {
     text-align: center;
-    backdrop-filter: blur(10px);
-    margin-bottom: 10px;
+    padding: 18px 0 24px 0;
+}
+
+.brand-title {
+    color: #111827;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.brand-sub {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+/* METRIC CARDS */
+.metric-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 22px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: 0.2s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
 }
 
 .metric-title {
-    color: #94a3b8;
-    font-size: 0.72rem;
-    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.75rem;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .metric-value {
-    color: white;
-    font-size: 1.7rem;
+    color: #111827;
+    font-size: 1.9rem;
     font-weight: 800;
 }
 
 .metric-delta {
+    font-size: 0.78rem;
     margin-top: 5px;
-    font-size: 0.75rem;
     font-weight: 600;
 }
 
-.delta-pos { color: #34d399; }
-.delta-neg { color: #f87171; }
+.delta-pos { color: #10b981; }
+.delta-neg { color: #ef4444; }
 
+/* SECTION HEADERS */
 .section-header {
     background: linear-gradient(
         90deg,
-        rgba(139,92,246,0.2),
-        transparent
+        rgba(99,102,241,0.12),
+        rgba(99,102,241,0.02)
     );
-    border-left: 4px solid #8b5cf6;
-    padding: 10px 16px;
-    border-radius: 0 8px 8px 0;
-    margin: 20px 0 12px 0;
-    color: #c4b5fd;
-    font-weight: 700;
+    border-left: 5px solid #6366f1;
+    padding: 12px 18px;
+    border-radius: 0 12px 12px 0;
+    margin: 28px 0 14px 0;
+    color: #111827;
     font-size: 1rem;
+    font-weight: 800;
 }
 
+/* FILTER PILLS */
 .filter-pill {
     display: inline-block;
-    background: rgba(139,92,246,0.2);
-    border: 1px solid rgba(139,92,246,0.5);
-    border-radius: 20px;
-    padding: 3px 12px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 30px;
+    padding: 4px 12px;
     font-size: 0.72rem;
-    color: #c4b5fd;
-    margin: 2px;
+    color: #4338ca;
+    margin: 3px;
+    font-weight: 600;
 }
+
+/* DATAFRAME */
+.stDataFrame {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* TABS */
+button[data-baseweb="tab"] {
+    font-weight: 700;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # COLORS
 # ─────────────────────────────────────────────────────────────
-CHART_BG = "rgba(0,0,0,0)"
-PAPER_BG = "rgba(0,0,0,0)"
-FONT_COLOR = "#e2e8f0"
-GRID_COLOR = "rgba(139,92,246,0.15)"
+FONT_COLOR = "#111827"
+GRID_COLOR = "rgba(0,0,0,0.08)"
 
-PURPLE = "#8b5cf6"
-CYAN = "#22d3ee"
-EMERALD = "#34d399"
-AMBER = "#fbbf24"
-ROSE = "#f87171"
+PURPLE = "#6366f1"
+CYAN = "#06b6d4"
+EMERALD = "#10b981"
+AMBER = "#f59e0b"
+ROSE = "#ef4444"
 
 COLORS = [
     PURPLE,
@@ -142,36 +176,37 @@ COLORS = [
     EMERALD,
     AMBER,
     ROSE,
-    "#a78bfa",
-    "#67e8f9",
-    "#6ee7b7",
+    "#8b5cf6",
+    "#14b8a6",
 ]
 
 # ─────────────────────────────────────────────────────────────
-# HELPERS
+# LAYOUT HELPERS
 # ─────────────────────────────────────────────────────────────
 def base_layout(**kwargs):
     return dict(
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=CHART_BG,
-        font=dict(family="Inter", color=FONT_COLOR),
-        margin=dict(l=40, r=20, t=50, b=40),
-        legend=dict(
-            bgcolor="rgba(0,0,0,0.3)",
-            bordercolor="rgba(139,92,246,0.3)",
-            borderwidth=1,
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        font=dict(
+            family="Inter",
+            color=FONT_COLOR
         ),
-        **kwargs,
+        margin=dict(l=40, r=20, t=60, b=40),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="#e5e7eb",
+            borderwidth=1
+        ),
+        **kwargs
     )
 
 def styled_axis(title="", fmt="", showgrid=True):
     return dict(
         title=title,
         gridcolor=GRID_COLOR if showgrid else "rgba(0,0,0,0)",
-        gridwidth=1,
-        linecolor="rgba(139,92,246,0.3)",
-        tickfont=dict(color="#94a3b8", size=11),
-        title_font=dict(color="#c4b5fd", size=12),
+        linecolor="#d1d5db",
+        tickfont=dict(color="#6b7280"),
+        title_font=dict(color="#374151"),
         tickformat=fmt,
         zeroline=False,
     )
@@ -181,19 +216,23 @@ def styled_axis(title="", fmt="", showgrid=True):
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(ttl=300)
 def load_data(filepath):
+
     df = pd.read_excel(filepath, header=1)
 
     df["GM%"] = (
-        df["GROSS MARGIN"] / df["NET REVENUE"] * 100
+        df["GROSS MARGIN"] /
+        df["NET REVENUE"] * 100
     ).round(2)
 
     df["EBITDA%"] = (
-        df["KITCHEN EBITDA"] / df["NET REVENUE"] * 100
+        df["KITCHEN EBITDA"] /
+        df["NET REVENUE"] * 100
     ).round(2)
 
     df["VARIANCE%"] = (
-        df["VARIANCE"] / df["NET REVENUE"] * 100
-    ).round(4)
+        df["VARIANCE"] /
+        df["NET REVENUE"] * 100
+    ).round(2)
 
     df["CM"] = df["GROSS MARGIN"]
     df["CM%"] = df["GM%"]
@@ -204,19 +243,20 @@ def load_data(filepath):
         "Dec-2023",
         "Jan-2024",
         "Feb-2024",
-        "Mar-2024",
+        "Mar-2024"
     ]
 
     df["MONTH"] = pd.Categorical(
         df["MONTH"],
         categories=month_order,
-        ordered=True,
+        ordered=True
     )
 
     df = df.sort_values("MONTH")
+
     df["MONTH_STR"] = df["MONTH"].astype(str)
 
-    def var_bucket(v):
+    def variance_bucket(v):
         if v < 15000:
             return "(a) Var < ₹15K"
         elif v < 20000:
@@ -226,65 +266,120 @@ def load_data(filepath):
         else:
             return "(d) Var > ₹25K"
 
-    df["VAR_BUCKET"] = df["VARIANCE"].apply(var_bucket)
-
-    def rev_bucket(r):
-        lacs = r / 1e5
-
-        if lacs < 15:
-            return "(a) Below INR 15 lacs"
-        elif lacs < 25:
-            return "(b) INR 15 to 25 lacs"
-        elif lacs < 35:
-            return "(c) INR 25 to 35 lacs"
-        elif lacs < 45:
-            return "(d) INR 35 to 45 lacs"
-        else:
-            return "(e) Above INR 45 lacs"
-
-    df["REV_BUCKET"] = df["NET REVENUE"].apply(rev_bucket)
+    df["VAR_BUCKET"] = df["VARIANCE"].apply(variance_bucket)
 
     return df
 
 # ─────────────────────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────────────────────
-def render_sidebar(df):
+def render_sidebar(df: pd.DataFrame):
 
     st.sidebar.markdown("""
-    <div style='text-align:center;padding:15px 0'>
-        <h2 style='color:white;'>🍳 Kitchen Intelligence</h2>
-        <p style='color:#888;'>P&L Analytics Suite</p>
+    <div class='brand'>
+        <div class='brand-title'>🍳 Kitchen Intelligence</div>
+        <div class='brand-sub'>P&L Analytics Suite · v2.0</div>
     </div>
     """, unsafe_allow_html=True)
 
+    st.sidebar.markdown("---")
+
     dashboard = st.sidebar.radio(
-        "Select Dashboard",
+        "📊 Select Dashboard",
         [
             "🏪 Kitchen Level PNL",
             "📉 Variance Level PNL"
         ]
     )
 
+    st.sidebar.markdown("---")
+
     filters = {}
 
-    filters["month"] = st.sidebar.multiselect(
-        "Month",
-        options=df["MONTH_STR"].unique().tolist(),
-        default=df["MONTH_STR"].unique().tolist()
-    )
+    if "Kitchen" in dashboard:
 
-    filters["city"] = st.sidebar.multiselect(
-        "City",
-        options=sorted(df["CITY"].unique().tolist()),
-        default=sorted(df["CITY"].unique().tolist())
-    )
+        st.sidebar.markdown("### 🎛️ PNL Filters")
 
-    filters["store"] = st.sidebar.multiselect(
-        "Store",
-        options=sorted(df["STORE"].unique().tolist()),
-        default=[]
-    )
+        filters["month"] = st.sidebar.multiselect(
+            "📅 Month",
+            options=df["MONTH_STR"].unique().tolist(),
+            default=df["MONTH_STR"].unique().tolist()
+        )
+
+        filters["store"] = st.sidebar.multiselect(
+            "🏪 Store",
+            options=sorted(df["STORE"].unique().tolist()),
+            default=[]
+        )
+
+        filters["city"] = st.sidebar.multiselect(
+            "🏙️ City",
+            options=sorted(df["CITY"].unique().tolist()),
+            default=sorted(df["CITY"].unique().tolist())
+        )
+
+        filters["zone"] = st.sidebar.multiselect(
+            "🗺️ Zone",
+            options=sorted(df["ZONE MAPPING"].unique().tolist()),
+            default=sorted(df["ZONE MAPPING"].unique().tolist())
+        )
+
+        filters["status"] = st.sidebar.multiselect(
+            "🔵 Status",
+            options=df["STATUS"].unique().tolist(),
+            default=df["STATUS"].unique().tolist()
+        )
+
+        st.sidebar.markdown("---")
+
+        st.sidebar.markdown("### 📐 Financial Filters")
+
+        rev_min = float(df["NET REVENUE"].min())
+        rev_max = float(df["NET REVENUE"].max())
+
+        filters["rev_range"] = st.sidebar.slider(
+            "💰 Net Revenue",
+            min_value=rev_min,
+            max_value=rev_max,
+            value=(rev_min, rev_max),
+            format="₹%,.0f"
+        )
+
+        ebitda_min = float(df["KITCHEN EBITDA"].min())
+        ebitda_max = float(df["KITCHEN EBITDA"].max())
+
+        filters["ebitda_range"] = st.sidebar.slider(
+            "📈 EBITDA",
+            min_value=ebitda_min,
+            max_value=ebitda_max,
+            value=(ebitda_min, ebitda_max),
+            format="₹%,.0f"
+        )
+
+    else:
+
+        st.sidebar.markdown("### 📉 Variance Filters")
+
+        filters["var_bucket"] = st.sidebar.multiselect(
+            "Variance Bucket",
+            options=df["VAR_BUCKET"].unique().tolist(),
+            default=df["VAR_BUCKET"].unique().tolist()
+        )
+
+        filters["city"] = st.sidebar.multiselect(
+            "🏙️ City",
+            options=sorted(df["CITY"].unique().tolist()),
+            default=sorted(df["CITY"].unique().tolist())
+        )
+
+    st.sidebar.markdown("---")
+
+    st.sidebar.markdown("""
+    <div style='text-align:center;color:#6b7280;font-size:0.72rem'>
+    Data refreshes every 5 min<br>
+    📊 Kitchen P&L Suite
+    </div>
+    """, unsafe_allow_html=True)
 
     return dashboard, filters
 
@@ -295,47 +390,62 @@ def apply_filters(df, filters):
 
     mask = pd.Series(True, index=df.index)
 
-    if filters["month"]:
+    if "month" in filters:
         mask &= df["MONTH_STR"].isin(filters["month"])
 
-    if filters["city"]:
+    if "store" in filters and filters["store"]:
+        mask &= df["STORE"].isin(filters["store"])
+
+    if "city" in filters:
         mask &= df["CITY"].isin(filters["city"])
 
-    if filters["store"]:
-        mask &= df["STORE"].isin(filters["store"])
+    if "zone" in filters:
+        mask &= df["ZONE MAPPING"].isin(filters["zone"])
+
+    if "status" in filters:
+        mask &= df["STATUS"].isin(filters["status"])
+
+    if "rev_range" in filters:
+        mask &= df["NET REVENUE"].between(*filters["rev_range"])
+
+    if "ebitda_range" in filters:
+        mask &= df["KITCHEN EBITDA"].between(*filters["ebitda_range"])
+
+    if "var_bucket" in filters:
+        mask &= df["VAR_BUCKET"].isin(filters["var_bucket"])
 
     return df[mask]
 
 # ─────────────────────────────────────────────────────────────
 # KPI STRIP
 # ─────────────────────────────────────────────────────────────
-def render_kpi_strip(df):
+def render_kpis(df):
 
     total_rev = df["NET REVENUE"].sum()
     avg_gm = df["GM%"].mean()
     avg_ebitda = df["EBITDA%"].mean()
-    total_ebitda = df["KITCHEN EBITDA"].sum()
+    stores = df["STORE"].nunique()
 
     cols = st.columns(4)
 
-    metrics = [
-        ("💰 Net Revenue", f"₹{total_rev/1e7:.2f} Cr"),
-        ("📈 Avg GM%", f"{avg_gm:.1f}%"),
-        ("📊 Avg EBITDA%", f"{avg_ebitda:.1f}%"),
-        ("🏦 Total EBITDA", f"₹{total_ebitda/1e7:.2f} Cr"),
+    cards = [
+        ("💰 Revenue", f"₹{total_rev/1e7:.2f} Cr"),
+        ("📊 Avg GM%", f"{avg_gm:.1f}%"),
+        ("📈 Avg EBITDA%", f"{avg_ebitda:.1f}%"),
+        ("🏪 Stores", f"{stores}")
     ]
 
-    for col, metric in zip(cols, metrics):
+    for col, card in zip(cols, cards):
         with col:
             st.markdown(f"""
             <div class='metric-card'>
-                <div class='metric-title'>{metric[0]}</div>
-                <div class='metric-value'>{metric[1]}</div>
+                <div class='metric-title'>{card[0]}</div>
+                <div class='metric-value'>{card[1]}</div>
             </div>
             """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
-# TREND CHARTS
+# TREND ANALYSIS
 # ─────────────────────────────────────────────────────────────
 def render_trends(df):
 
@@ -345,7 +455,7 @@ def render_trends(df):
     )
 
     monthly = df.groupby("MONTH_STR").agg(
-        NET_REVENUE=("NET REVENUE", "sum"),
+        Revenue=("NET REVENUE", "sum"),
         EBITDA=("KITCHEN EBITDA", "sum"),
         GM=("GM%", "mean"),
         EBITDA_PCT=("EBITDA%", "mean")
@@ -360,19 +470,19 @@ def render_trends(df):
         fig.add_trace(
             go.Bar(
                 x=monthly["MONTH_STR"],
-                y=monthly["NET_REVENUE"] / 1e5,
-                name="Revenue",
+                y=monthly["Revenue"]/1e5,
                 marker_color=PURPLE,
+                name="Revenue"
             )
         )
 
         fig.add_trace(
             go.Scatter(
                 x=monthly["MONTH_STR"],
-                y=monthly["EBITDA"] / 1e5,
-                name="EBITDA",
+                y=monthly["EBITDA"]/1e5,
                 mode="lines+markers",
                 line=dict(color=EMERALD, width=3),
+                name="EBITDA"
             )
         )
 
@@ -380,7 +490,7 @@ def render_trends(df):
             title="Revenue & EBITDA Trend",
             xaxis=styled_axis("Month"),
             yaxis=styled_axis("₹ Lacs"),
-            **base_layout()
+            **base_layout(height=420)
         )
 
         st.plotly_chart(fig, use_container_width=True)
@@ -393,9 +503,9 @@ def render_trends(df):
             go.Scatter(
                 x=monthly["MONTH_STR"],
                 y=monthly["GM"],
-                name="GM%",
                 mode="lines+markers",
                 line=dict(color=CYAN, width=3),
+                name="GM%"
             )
         )
 
@@ -403,17 +513,17 @@ def render_trends(df):
             go.Scatter(
                 x=monthly["MONTH_STR"],
                 y=monthly["EBITDA_PCT"],
-                name="EBITDA%",
                 mode="lines+markers",
                 line=dict(color=AMBER, width=3),
+                name="EBITDA%"
             )
         )
 
         fig2.update_layout(
-            title="Margin Trends",
+            title="Margin Trend",
             xaxis=styled_axis("Month"),
-            yaxis=styled_axis("Margin %"),
-            **base_layout()
+            yaxis=styled_axis("%"),
+            **base_layout(height=420)
         )
 
         st.plotly_chart(fig2, use_container_width=True)
@@ -421,16 +531,16 @@ def render_trends(df):
 # ─────────────────────────────────────────────────────────────
 # CITY ANALYSIS
 # ─────────────────────────────────────────────────────────────
-def render_city_analysis(df):
+def render_city(df):
 
     st.markdown(
-        "<div class='section-header'>🏙️ City Analysis</div>",
+        "<div class='section-header'>🏙️ City Performance</div>",
         unsafe_allow_html=True
     )
 
     city = df.groupby("CITY").agg(
-        REVENUE=("NET REVENUE", "sum"),
-        EBITDA=("KITCHEN EBITDA", "sum"),
+        Revenue=("NET REVENUE", "sum"),
+        EBITDA=("KITCHEN EBITDA", "sum")
     ).reset_index()
 
     col1, col2 = st.columns(2)
@@ -440,7 +550,7 @@ def render_city_analysis(df):
         fig = px.bar(
             city,
             x="CITY",
-            y="REVENUE",
+            y="Revenue",
             color="CITY",
             color_discrete_sequence=COLORS,
             title="Revenue by City"
@@ -449,7 +559,7 @@ def render_city_analysis(df):
         fig.update_layout(
             xaxis=styled_axis("City"),
             yaxis=styled_axis("Revenue"),
-            **base_layout()
+            **base_layout(height=420)
         )
 
         st.plotly_chart(fig, use_container_width=True)
@@ -461,13 +571,13 @@ def render_city_analysis(df):
                 labels=city["CITY"],
                 values=city["EBITDA"],
                 hole=0.5,
-                marker_colors=COLORS,
+                marker_colors=COLORS
             )
         )
 
         fig2.update_layout(
-            title="EBITDA Share by City",
-            **base_layout()
+            title="EBITDA Share",
+            **base_layout(height=420)
         )
 
         st.plotly_chart(fig2, use_container_width=True)
@@ -475,7 +585,7 @@ def render_city_analysis(df):
 # ─────────────────────────────────────────────────────────────
 # STORE SCATTER
 # ─────────────────────────────────────────────────────────────
-def render_scatter(df):
+def render_store_scatter(df):
 
     st.markdown(
         "<div class='section-header'>🔮 Store Intelligence</div>",
@@ -483,16 +593,16 @@ def render_scatter(df):
     )
 
     store = df.groupby(["STORE", "CITY"]).agg(
-        NET_REVENUE=("NET REVENUE", "mean"),
-        EBITDA_PCT=("EBITDA%", "mean"),
+        Revenue=("NET REVENUE", "mean"),
+        EBITDA=("EBITDA%", "mean")
     ).reset_index()
 
     fig = px.scatter(
         store,
-        x="NET_REVENUE",
-        y="EBITDA_PCT",
+        x="Revenue",
+        y="EBITDA",
         color="CITY",
-        size="NET_REVENUE",
+        size="Revenue",
         hover_name="STORE",
         color_discrete_sequence=COLORS,
         title="Revenue vs EBITDA%"
@@ -501,100 +611,7 @@ def render_scatter(df):
     fig.update_layout(
         xaxis=styled_axis("Revenue"),
         yaxis=styled_axis("EBITDA%"),
-        **base_layout(height=500)
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-# ─────────────────────────────────────────────────────────────
-# RANKINGS
-# ─────────────────────────────────────────────────────────────
-def render_rankings(df):
-
-    st.markdown(
-        "<div class='section-header'>🏆 Store Rankings</div>",
-        unsafe_allow_html=True
-    )
-
-    perf = df.groupby("STORE").agg(
-        EBITDA=("EBITDA%", "mean")
-    ).reset_index()
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        top = perf.nlargest(10, "EBITDA")
-
-        fig = go.Figure(
-            go.Bar(
-                x=top["EBITDA"],
-                y=top["STORE"],
-                orientation="h",
-                marker_color=EMERALD,
-            )
-        )
-
-        fig.update_layout(
-            title="Top Stores",
-            yaxis=dict(autorange="reversed"),
-            **base_layout(height=400)
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col2:
-
-        bottom = perf.nsmallest(10, "EBITDA")
-
-        fig2 = go.Figure(
-            go.Bar(
-                x=bottom["EBITDA"],
-                y=bottom["STORE"],
-                orientation="h",
-                marker_color=ROSE,
-            )
-        )
-
-        fig2.update_layout(
-            title="Bottom Stores",
-            yaxis=dict(autorange="reversed"),
-            **base_layout(height=400)
-        )
-
-        st.plotly_chart(fig2, use_container_width=True)
-
-# ─────────────────────────────────────────────────────────────
-# VARIANCE DASHBOARD
-# ─────────────────────────────────────────────────────────────
-def render_variance_dashboard(df):
-
-    st.markdown(
-        "<div class='section-header'>📉 Variance Dashboard</div>",
-        unsafe_allow_html=True
-    )
-
-    var = df.groupby(["MONTH_STR", "VAR_BUCKET"]).size().reset_index(name="COUNT")
-
-    fig = px.bar(
-        var,
-        x="MONTH_STR",
-        y="COUNT",
-        color="VAR_BUCKET",
-        barmode="stack",
-        color_discrete_map={
-            "(a) Var < ₹15K": EMERALD,
-            "(b) Var ₹15K–20K": AMBER,
-            "(c) Var ₹20K–25K": PURPLE,
-            "(d) Var > ₹25K": ROSE,
-        },
-        title="Variance Distribution"
-    )
-
-    fig.update_layout(
-        xaxis=styled_axis("Month"),
-        yaxis=styled_axis("Store Count"),
-        **base_layout(height=500)
+        **base_layout(height=520)
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -607,20 +624,34 @@ def render_insights(df):
     st.markdown("---")
 
     st.markdown(
-        "<div class='section-header'>💡 Insights</div>",
+        "<div class='section-header'>💡 Auto Insights</div>",
         unsafe_allow_html=True
     )
 
     best_city = df.groupby("CITY")["EBITDA%"].mean().idxmax()
+    best_val = df.groupby("CITY")["EBITDA%"].mean().max()
+
     worst_city = df.groupby("CITY")["EBITDA%"].mean().idxmin()
+    worst_val = df.groupby("CITY")["EBITDA%"].mean().min()
 
-    col1, col2 = st.columns(2)
+    high_var = df[df["VARIANCE%"] > 3]["STORE"].nunique()
 
-    with col1:
-        st.success(f"🏆 Best Performing City: {best_city}")
+    c1, c2, c3 = st.columns(3)
 
-    with col2:
-        st.error(f"⚠️ Lowest Performing City: {worst_city}")
+    with c1:
+        st.success(
+            f"🏆 Best City: {best_city} ({best_val:.1f}% EBITDA)"
+        )
+
+    with c2:
+        st.error(
+            f"⚠️ Weakest City: {worst_city} ({worst_val:.1f}% EBITDA)"
+        )
+
+    with c3:
+        st.info(
+            f"📉 High Variance Stores: {high_var}"
+        )
 
 # ─────────────────────────────────────────────────────────────
 # MAIN
@@ -629,16 +660,17 @@ def main():
 
     st.markdown("""
     <div style='text-align:center;padding:10px 0 25px 0'>
-        <h1 style='color:white;font-size:2.2rem;font-weight:800'>
+        <h1 style='color:#111827;font-size:2.4rem;font-weight:900'>
             🍳 Kitchen P&L Intelligence Suite
         </h1>
-        <p style='color:#888'>
+
+        <p style='color:#6b7280;font-size:0.9rem'>
             CLOUD KITCHEN ANALYTICS · MULTI-CITY · REAL-TIME FILTERS
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    with st.spinner("Loading data..."):
+    with st.spinner("Loading kitchen analytics..."):
         df = load_data(DATA_PATH)
 
     dashboard, filters = render_sidebar(df)
@@ -649,13 +681,12 @@ def main():
         st.warning("No matching data found.")
         return
 
-    render_kpi_strip(filtered_df)
+    render_kpis(filtered_df)
 
     tabs = st.tabs([
         "📈 Trends",
-        "🏙️ City",
-        "🔮 Stores",
-        "🏆 Rankings",
+        "🏙️ Cities",
+        "🔮 Store Intelligence",
         "📉 Variance"
     ])
 
@@ -663,16 +694,33 @@ def main():
         render_trends(filtered_df)
 
     with tabs[1]:
-        render_city_analysis(filtered_df)
+        render_city(filtered_df)
 
     with tabs[2]:
-        render_scatter(filtered_df)
+        render_store_scatter(filtered_df)
 
     with tabs[3]:
-        render_rankings(filtered_df)
 
-    with tabs[4]:
-        render_variance_dashboard(filtered_df)
+        variance = filtered_df.groupby(
+            ["MONTH_STR", "VAR_BUCKET"]
+        ).size().reset_index(name="COUNT")
+
+        fig = px.bar(
+            variance,
+            x="MONTH_STR",
+            y="COUNT",
+            color="VAR_BUCKET",
+            barmode="stack",
+            title="Variance Distribution"
+        )
+
+        fig.update_layout(
+            xaxis=styled_axis("Month"),
+            yaxis=styled_axis("Store Count"),
+            **base_layout(height=500)
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
 
     render_insights(filtered_df)
 
