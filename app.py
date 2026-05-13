@@ -769,14 +769,19 @@ def render_store_analysis(fdf: pd.DataFrame):
     }).reset_index()
     store_perf["EBITDA%"] = (store_perf["KITCHEN EBITDA"] / store_perf["NET REVENUE"] * 100).round(2)
 
+    # Create safe size column for marker sizing
+    store_perf_plot = store_perf.copy()
+    store_perf_plot["GM_SIZE"] = store_perf_plot["GM%"].abs().fillna(0).replace([np.inf, -np.inf], 0)
+    store_perf_plot["GM_SIZE"] = store_perf_plot["GM_SIZE"].clip(lower=1)
+
     fig = px.scatter(
-        store_perf, x="NET REVENUE", y="EBITDA%",
-        color="CITY", size="GM%", hover_data=["STORE", "STATUS"],
+        store_perf_plot, x="NET REVENUE", y="EBITDA%",
+        color="CITY", size="GM_SIZE", hover_data=["STORE", "STATUS", "GM%"],
         color_discrete_sequence=COLORS,
-        title="Revenue vs EBITDA% (Bubble = GM%)"
+        title="Revenue vs EBITDA% (Bubble = |GM%|)"
     )
     fig.update_layout(**base_layout(height=500))
-    fig.update_xaxes(title="Avg Net Revenue (₹)", **styled_axis(format="₹,.0f"))
+    fig.update_xaxes(title="Avg Net Revenue (₹)", **styled_axis(fmt="₹,.0f"))
     fig.update_yaxes(title="EBITDA %", **styled_axis())
     fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color="white")))
     st.plotly_chart(fig, use_container_width=True)
@@ -1041,17 +1046,23 @@ def render_variance_analysis(fdf: pd.DataFrame):
     """Render detailed variance analysis."""
     st.markdown('<div class="section-header">🔍 Variance vs Revenue Analysis</div>', unsafe_allow_html=True)
 
+    # Create safe size column: EBITDA% must be non-negative for marker sizing
+    plot_df = fdf.copy()
+    plot_df["EBITDA_SIZE"] = plot_df["EBITDA%"].abs().fillna(0).replace([np.inf, -np.inf], 0)
+    # Ensure minimum size so all points are visible
+    plot_df["EBITDA_SIZE"] = plot_df["EBITDA_SIZE"].clip(lower=1)
+
     fig = px.scatter(
-        fdf, x="NET REVENUE", y="VARIANCE",
-        color="VAR_BUCKET", size="EBITDA%", 
-        hover_data=["STORE", "CITY", "MONTH_STR"],
+        plot_df, x="NET REVENUE", y="VARIANCE",
+        color="VAR_BUCKET", size="EBITDA_SIZE", 
+        hover_data=["STORE", "CITY", "MONTH_STR", "EBITDA%"],
         color_discrete_map={"(a) Var < ₹15K": EMERALD, "(b) Var ₹15K-20K": CYAN,
                            "(c) Var ₹20K-25K": AMBER, "(d) Var > ₹25K": ROSE},
-        title="Variance vs Revenue (Color = Bucket, Size = EBITDA%)"
+        title="Variance vs Revenue (Color = Bucket, Size = |EBITDA%|)"
     )
     fig.update_layout(**base_layout(height=500))
-    fig.update_xaxes(title="Net Revenue (₹)", **styled_axis(format="₹,.0f"))
-    fig.update_yaxes(title="Variance (₹)", **styled_axis(format="₹,.0f"))
+    fig.update_xaxes(title="Net Revenue (₹)", **styled_axis(fmt="₹,.0f"))
+    fig.update_yaxes(title="Variance (₹)", **styled_axis(fmt="₹,.0f"))
     fig.update_traces(marker=dict(opacity=0.7, line=dict(width=1, color="white")))
     st.plotly_chart(fig, use_container_width=True)
 
