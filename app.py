@@ -17,6 +17,11 @@ from plotly.subplots import make_subplots
 import numpy as np
 from functools import lru_cache
 import hashlib
+from pathlib import Path
+
+# Always resolve data file relative to this script — works on local & Streamlit Cloud
+BASE_DIR  = Path(__file__).parent
+DATA_PATH = BASE_DIR / "Kittchen_PNL_Data.xlsx"
 
 # ─── PAGE CONFIG ────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -114,7 +119,7 @@ hr { border-color: rgba(139,92,246,0.25) !important; }
 
 # ─── DATA LOADING & CACHING ─────────────────────────────────────────────────
 @st.cache_data(ttl=300, show_spinner=False)   # 5-min cache for near-real-time refresh
-def load_data(filepath: str) -> pd.DataFrame:
+def load_data(filepath) -> pd.DataFrame:
     """Load and preprocess the kitchen PNL data."""
     df = pd.read_excel(filepath, header=1)
 
@@ -1054,7 +1059,6 @@ def main():
     """, unsafe_allow_html=True)
 
     # ── Load data ──
-    DATA_PATH = "Kittchen_PNL_Data.xlsx"
     with st.spinner("Loading kitchen data..."):
         df = load_data(DATA_PATH)
 
